@@ -1,0 +1,11 @@
+/controls/
+/data*/
+/detection/
+/dyad/
+/inskape/
+/results*/
+**/__pycache__/
+
+/data.csv
+/data.zip
+/data_groves.zip
