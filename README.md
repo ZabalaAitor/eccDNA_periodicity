@@ -100,32 +100,9 @@ the permutation analysis considerably longer.
 
 The full set of outputs is deposited at Zenodo:
 
-🔗 *DOI of the workflow and results deposit — to be added*
+🔗 https://doi.org/10.5281/zenodo.23474862
 
 ## 📄 License
 
 MIT. See [LICENSE](LICENSE).
-
-## 📚 Cite
-
-If you use this code or the deposited data, please cite the paper and the
-Zenodo deposit:
-
-```bibtex
-@misc{zabala2026extrachromosomal,
-  author    = {Zabala, Aitor and
-               Ascensi{\'o}n, Alex M. and
-               Otzen Bagger, Frederik and
-               Krogh, Anders and
-               Otaegui, David and
-               Prada-Luengo, I{\~n}igo},
-  title     = {Extrachromosomal circular {DNA} formation follows a
-               10.5-bp periodicity reflecting the minor groove
-               orientation around nucleosomes},
-  year      = {2026},
-  publisher = {Zenodo},
-  doi       = {10.5281/zenodo.23472112},
-  url       = {https://doi.org/10.5281/zenodo.23472112},
-  note      = {Dataset}
-}
 ```
