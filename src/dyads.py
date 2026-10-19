@@ -1,3 +1,11 @@
+"""Positioning of eccDNA breakpoints relative to nucleosome dyads.
+
+Maps each breakpoint to its closest consensus dyad, builds observed-to-expected
+enrichment profiles against randomised coordinate sets, detrends the profile to
+isolate the minor-groove oscillation, and compares inward- with outward-facing
+rotational positions.
+"""
+
 from cmath import phase
 from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -21,9 +29,7 @@ MINOR_GROOVE_IN_COLOR = "#450558"
 LABEL_FONTSIZE = 18
 TICK_FONTSIZE = 16
 
-# ============================================================
-# CORE FUNCTIONS
-# ============================================================
+# --- CORE FUNCTIONS ---
 def plot_circle_length_phase(
     circles_bed_path,
     output_dir=None,
@@ -48,9 +54,7 @@ def plot_circle_length_phase(
         Dictionary containing the calculated lengths, phases, counts, and bin edges.
     """
 
-    # ---------------------------------------------------------
-    # 1. Load BED
-    # ---------------------------------------------------------
+    # --- 1. Load BED ---
     bed = pd.read_csv(
         circles_bed_path,
         sep="\t",
@@ -59,9 +63,7 @@ def plot_circle_length_phase(
         names=["chrom", "start", "end"]
     )
 
-    # ---------------------------------------------------------
-    # 2. Calculate circle lengths
-    # ---------------------------------------------------------
+    # --- 2. Calculate circle lengths ---
     lengths = (
         bed["end"].astype(float)
         - bed["start"].astype(float)
@@ -69,9 +71,7 @@ def plot_circle_length_phase(
 
     print(f"Total circles before filtering: {len(lengths):,}")
 
-    # ---------------------------------------------------------
-    # 3. Filter circles
-    # ---------------------------------------------------------
+    # --- 3. Filter circles ---
     lengths = lengths[lengths <= circle_size]
 
     print(
@@ -84,14 +84,10 @@ def plot_circle_length_phase(
         f"{lengths.min():.1f}–{lengths.max():.1f} bp"
     )
 
-    # ---------------------------------------------------------
-    # 4. Define periodicity
-    # ---------------------------------------------------------
+    # --- 4. Define periodicity ---
     period = 10.5
 
-    # ---------------------------------------------------------
-    # 5. Calculate 10.5-bp phase
-    # ---------------------------------------------------------
+    # --- 5. Calculate 10.5-bp phase ---
     phases = (
         (lengths % period)
         / period
@@ -105,9 +101,7 @@ def plot_circle_length_phase(
         f"{phases.min():.2f}–{phases.max():.2f}°"
     )
 
-    # ---------------------------------------------------------
-    # 6. Phase distribution
-    # ---------------------------------------------------------
+    # --- 6. Phase distribution ---
     bins = np.arange(0, 361, 1)
 
     counts, edges = np.histogram(
@@ -123,9 +117,7 @@ def plot_circle_length_phase(
             f"{count}"
         )
 
-    # ---------------------------------------------------------
-    # 7. Plot
-    # ---------------------------------------------------------
+    # --- 7. Plot ---
     fig, ax = plt.subplots(
         figsize=(7,5)
     )
@@ -172,9 +164,7 @@ def plot_circle_length_phase(
 
     plt.tight_layout()
 
-    # ---------------------------------------------------------
-    # 8. Save
-    # ---------------------------------------------------------
+    # --- 8. Save ---
     if output_dir is not None:
         plt.savefig(
             output_dir / "circle_length_phase.png",
@@ -253,6 +243,7 @@ def find_closest_consensus_dyad(circles, nucleosomes_dyads):
 
         def closest_dyads(breakpoints):
 
+            """Return the closest consensus dyad to each breakpoint, with signed distance."""
             idx = np.searchsorted(
                 dyad_positions,
                 breakpoints,
@@ -493,9 +484,7 @@ def process_permutation(
 
     return output_tsv
 
-# ============================================================
-# MAIN ANALYSIS
-# ============================================================
+# --- MAIN ANALYSIS ---
 
 def analyze_circle_breakpoints(
     consensus_dyads_path,
@@ -557,9 +546,7 @@ def analyze_circle_breakpoints(
         exist_ok=True,
     )
 
-    # --------------------------------------------------------
-    # Load consensus dyads
-    # --------------------------------------------------------
+    # --- Load consensus dyads ---
 
     consensus_dyads = pd.read_csv(
         consensus_dyads_path,
@@ -578,9 +565,7 @@ def analyze_circle_breakpoints(
         f"{len(consensus_dyads):,}"
     )
 
-    # --------------------------------------------------------
-    # Load circles
-    # --------------------------------------------------------
+    # --- Load circles ---
 
     circles = pd.read_csv(
         circles_bed_path,
@@ -597,9 +582,7 @@ def analyze_circle_breakpoints(
         f"Circles: {len(circles):,}"
     )
 
-    # --------------------------------------------------------
-    # Find closest dyads
-    # --------------------------------------------------------
+    # --- Find closest dyads ---
 
     breakpoint_dyads = find_closest_consensus_dyad(
         circles,
@@ -611,9 +594,7 @@ def analyze_circle_breakpoints(
         f"{len(breakpoint_dyads):,}"
     )
 
-    # --------------------------------------------------------
-    # Save breakpoint results
-    # --------------------------------------------------------
+    # --- Save breakpoint results ---
 
     breakpoint_output = (
         output_dir /
@@ -630,9 +611,7 @@ def analyze_circle_breakpoints(
         f"Saved: {breakpoint_output}"
     )
 
-    # --------------------------------------------------------
-    # Plot
-    # --------------------------------------------------------
+    # --- Plot ---
 
     plot_prefix = (
         output_dir /
@@ -649,9 +628,7 @@ def analyze_circle_breakpoints(
         f"Plots saved with prefix: {plot_prefix}"
     )
 
-    # --------------------------------------------------------
-    # Permutations
-    # --------------------------------------------------------
+    # --- Permutations ---
 
     permutation_results = []
 
@@ -952,9 +929,7 @@ def _plot_colored_profile(
 
     plt.close(fig)
 
-# ========================================================
-# PLOT COLORED PROFILE
-# ========================================================
+# --- PLOT COLORED PROFILE ---
 
 def _plot_colored_profile(
     x,
@@ -1090,9 +1065,7 @@ def _plot_colored_profile(
 
     plt.close(fig)
 
-# ========================================================
-# MAIN ENRICHMENT ANALYSIS
-# ========================================================
+# --- MAIN ENRICHMENT ANALYSIS ---
 
 def analyze_circle_breakpoint_enrichment(
     observed_file,
@@ -1134,9 +1107,7 @@ def analyze_circle_breakpoint_enrichment(
         exist_ok=True,
     )
 
-    # ========================================================
-    # 1. CIRCLE LENGTH NUCLEOSOMAL PHASE
-    # ========================================================
+    # --- 1. CIRCLE LENGTH NUCLEOSOMAL PHASE ---
 
     print(
         "Plotting circle length nucleosomal phase..."
@@ -1147,9 +1118,7 @@ def analyze_circle_breakpoint_enrichment(
         output_dir,
         circle_size=circle_size
     )
-    # ========================================================
-    # OBSERVED
-    # ========================================================
+    # --- OBSERVED ---
 
     print("Loading observed data...")
 
@@ -1164,9 +1133,7 @@ def analyze_circle_breakpoint_enrichment(
         f"{observed_distance.sum():,}"
     )
 
-    # ========================================================
-    # PERMUTATIONS
-    # ========================================================
+    # --- PERMUTATIONS ---
 
     permutation_files = sorted(
         permutations_dir.glob("*.tsv")
@@ -1193,9 +1160,7 @@ def analyze_circle_breakpoint_enrichment(
             max_distance=max_distance,
         )
 
-    # ========================================================
-    # OBSERVED / EXPECTED
-    # ========================================================
+    # --- OBSERVED / EXPECTED ---
 
     obs_exp_df = _calculate_obs_exp(
         observed_distance,
@@ -1208,9 +1173,7 @@ def analyze_circle_breakpoint_enrichment(
         .sort_index()
     )
 
-    # ========================================================
-    # SMOOTHING
-    # ========================================================
+    # --- SMOOTHING ---
 
     # Smoothing for the full profile
     smoothed_obs_exp = (
@@ -1234,9 +1197,7 @@ def analyze_circle_breakpoint_enrichment(
         .mean()
     )
 
-    # ========================================================
-    # SAVE O/E TABLE
-    # ========================================================
+    # --- SAVE O/E TABLE ---
 
     obs_exp_output = (
         output_dir /
@@ -1259,9 +1220,7 @@ def analyze_circle_breakpoint_enrichment(
         header=["observed_expected_ratio"],
     )
 
-    # ========================================================
-    # COMMON POSITIONS
-    # ========================================================
+    # --- COMMON POSITIONS ---
 
     selected_points = np.array(
         [5, 15, 25, 35, 45, 55],
@@ -1275,9 +1234,7 @@ def analyze_circle_breakpoint_enrichment(
 
     width = 2.5
 
-    # ========================================================
-    # UNFOLDED PROFILE WITH CONFIDENCE INTERVAL
-    # ========================================================
+    # --- UNFOLDED PROFILE WITH CONFIDENCE INTERVAL ---
 
     x = mean_obs_exp.index.to_numpy(
         dtype=float
@@ -1288,9 +1245,7 @@ def analyze_circle_breakpoint_enrichment(
         dtype=float
     )
 
-    # --------------------------------------------------------
-    # Confidence interval from permutation distributions
-    # --------------------------------------------------------
+    # --- Confidence interval from permutation distributions ---
 
     # Calculate 95% confidence interval across permutations
     ci_lower = (
@@ -1341,17 +1296,13 @@ def analyze_circle_breakpoint_enrichment(
         dtype=float
     )
 
-    # ========================================================
-    # PLOT
-    # ========================================================
+    # --- PLOT ---
 
     fig, ax = plt.subplots(
         figsize=(7, 5)
     )
 
-    # --------------------------------------------------------
-    # Nucleosome region
-    # --------------------------------------------------------
+    # --- Nucleosome region ---
 
     ax.axvspan(
         -83.5,
@@ -1361,9 +1312,7 @@ def analyze_circle_breakpoint_enrichment(
         zorder=0,
     )
 
-    # --------------------------------------------------------
-    # 95% confidence interval
-    # --------------------------------------------------------
+    # --- 95% confidence interval ---
 
     ax.fill_between(
         x,
@@ -1376,9 +1325,7 @@ def analyze_circle_breakpoint_enrichment(
         zorder=1,
     )
 
-    # --------------------------------------------------------
-    # Observed / expected profile
-    # --------------------------------------------------------
+    # --- Observed / expected profile ---
 
     ax.plot(
         x,
@@ -1389,9 +1336,7 @@ def analyze_circle_breakpoint_enrichment(
         zorder=2,
     )
 
-    # --------------------------------------------------------
-    # Labels
-    # --------------------------------------------------------
+    # --- Labels ---
 
     ax.set_xlabel(
         "Breakpoint distance from dyad (bp)",
@@ -1408,9 +1353,7 @@ def analyze_circle_breakpoint_enrichment(
         labelsize=TICK_FONTSIZE,
     )
 
-    # --------------------------------------------------------
-    # Legend
-    # --------------------------------------------------------
+    # --- Legend ---
 
     ax.legend(
         handles=[
@@ -1439,9 +1382,7 @@ def analyze_circle_breakpoint_enrichment(
         fontsize=TICK_FONTSIZE,
     )
 
-    # --------------------------------------------------------
-    # Style
-    # --------------------------------------------------------
+    # --- Style ---
 
     sns.despine(
         ax=ax
@@ -1449,9 +1390,7 @@ def analyze_circle_breakpoint_enrichment(
 
     fig.tight_layout()
 
-    # ========================================================
-    # SAVE
-    # ========================================================
+    # --- SAVE ---
 
     unfolded_output = (
         output_dir /
@@ -1601,9 +1540,7 @@ def analyze_circle_breakpoint_enrichment(
     plt.show()
     plt.close(fig)
 
-    # ========================================================
-    # DETRENDING
-    # ========================================================
+    # --- DETRENDING ---
 
     y_raw = mean_obs_exp.to_numpy(
         dtype=float
@@ -1631,9 +1568,7 @@ def analyze_circle_breakpoint_enrichment(
         sigma=1.5,
     )
 
-    # ========================================================
-    # DETRENDED PROFILE
-    # ========================================================
+    # --- DETRENDED PROFILE ---
 
     points = np.column_stack([
         x,
@@ -1761,9 +1696,7 @@ def analyze_circle_breakpoint_enrichment(
     plt.show()
     plt.close(fig)
 
-    # ========================================================
-    # MINOR GROOVE IN / OUT
-    # ========================================================
+    # --- MINOR GROOVE IN / OUT ---
 
     minor_groove_in = [
         p + delta
@@ -1832,9 +1765,7 @@ def analyze_circle_breakpoint_enrichment(
         residual_blurred[out_mask]
     )
 
-    # ========================================================
-    # VIOLIN PLOT
-    # ========================================================
+    # --- VIOLIN PLOT ---
 
     data = [
         minor_groove_in_values,
@@ -1854,9 +1785,7 @@ def analyze_circle_breakpoint_enrichment(
         showextrema=False,
     )
 
-    # --------------------------------------------------------
-    # VIOLIN COLORS
-    # --------------------------------------------------------
+    # --- VIOLIN COLORS ---
 
     violin_colors = [
         MINOR_GROOVE_IN_COLOR,
@@ -1872,17 +1801,13 @@ def analyze_circle_breakpoint_enrichment(
         body.set_alpha(0.25)
         body.set_linewidth(1.2)
 
-    # --------------------------------------------------------
-    # MEDIAN COLORS
-    # --------------------------------------------------------
+    # --- MEDIAN COLORS ---
 
     if "cmedians" in parts:
         parts["cmedians"].set_color("black")
         parts["cmedians"].set_linewidth(2.0)
 
-    # --------------------------------------------------------
-    # JITTERED DATA POINTS
-    # --------------------------------------------------------
+    # --- JITTERED DATA POINTS ---
 
     rng = np.random.default_rng(42)
 
@@ -1922,9 +1847,7 @@ def analyze_circle_breakpoint_enrichment(
         edgecolors="none",
     )
 
-    # --------------------------------------------------------
-    # AXIS
-    # --------------------------------------------------------
+    # --- AXIS ---
 
     ax.set_xticks([1, 2])
 
@@ -1952,9 +1875,7 @@ def analyze_circle_breakpoint_enrichment(
 
     fig.tight_layout()
 
-    # --------------------------------------------------------
-    # SAVE PNG + PDF
-    # --------------------------------------------------------
+    # --- SAVE PNG + PDF ---
 
     violin_output = (
         output_dir /
@@ -1975,9 +1896,7 @@ def analyze_circle_breakpoint_enrichment(
     plt.show()
     plt.close(fig)
 
-        # --------------------------------------------------------
-    # STATISTICAL TESTS
-    # --------------------------------------------------------
+        # --- STATISTICAL TESTS ---
 
     print("\n" + "=" * 60)
     print("STATISTICAL COMPARISON: MINOR GROOVE ORIENTATION")
@@ -2026,9 +1945,7 @@ def analyze_circle_breakpoint_enrichment(
         f"Outward mean:   {np.mean(out_values):.5f}"
     )
 
-    # --------------------------------------------------------
-    # NORMALITY
-    # --------------------------------------------------------
+    # --- NORMALITY ---
 
     # Shapiro-Wilk is not reliable for very large samples.
     # If n > 5000, use a random subset of 5000 observations.
@@ -2073,18 +1990,14 @@ def analyze_circle_breakpoint_enrichment(
         f"p = {shapiro_out.pvalue:.4e}"
     )
 
-    # --------------------------------------------------------
-    # GROUP COMPARISON
-    # --------------------------------------------------------
+    # --- GROUP COMPARISON ---
 
     if (
         shapiro_in.pvalue > 0.05
         and shapiro_out.pvalue > 0.05
     ):
 
-        # ----------------------------------------------------
-        # Welch's t-test
-        # ----------------------------------------------------
+        # --- Welch's t-test ---
 
         test = ttest_ind(
             in_values,
@@ -2118,9 +2031,11 @@ def analyze_circle_breakpoint_enrichment(
             ) / 2
         )
 
+        # Same group order as the t-test above (in_values, out_values), so that
+        # the sign of Cohen's d matches the sign of the t statistic.
         cohens_d = (
-            mean_out -
-            mean_in
+            mean_in -
+            mean_out
         ) / pooled_sd
 
         effect_name = "Cohen's d"
@@ -2128,9 +2043,7 @@ def analyze_circle_breakpoint_enrichment(
 
     else:
 
-        # ----------------------------------------------------
-        # Mann–Whitney U
-        # ----------------------------------------------------
+        # --- Mann–Whitney U ---
 
         test = mannwhitneyu(
             in_values,
@@ -2156,9 +2069,7 @@ def analyze_circle_breakpoint_enrichment(
         effect_name = "Rank-biserial r"
         effect_size = rank_biserial
 
-    # --------------------------------------------------------
-    # STATISTICAL REPORT
-    # --------------------------------------------------------
+    # --- STATISTICAL REPORT ---
 
     print("\n--- Group comparison ---")
 
@@ -2180,9 +2091,7 @@ def analyze_circle_breakpoint_enrichment(
 
     print("=" * 60)
 
-    # --------------------------------------------------------
-    # SAVE STATISTICS
-    # --------------------------------------------------------
+    # --- SAVE STATISTICS ---
 
     statistics_output = (
         output_dir /

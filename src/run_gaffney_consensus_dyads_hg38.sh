@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Call consensus nucleosome dyads from MNase-seq midpoint signal and lift them to hg38.
+# Usage: bash src/run_gaffney_consensus_dyads_hg38.sh <mids.wig.gz> <hg18ToHg38.chain.gz> <out.tsv>
+# Converts the WIG track to BigWig, scores positions with call_dyads.py, then lifts hg18 -> hg38.
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
@@ -40,23 +44,20 @@ cleanup() {
 }
 trap cleanup EXIT
 
-CHROM_SIZES_LOCAL="${SCRIPT_DIR}/hg18.chrom.sizes"
+# The hg18 chromosome sizes are read from the chain file itself: every `chain`
+# header line carries the target (hg18) chromosome name and its full length.
+# This keeps the step self-contained -- no download is needed -- and guarantees
+# that the sizes always match the chain actually in use.
 CHROM_SIZES_TMP="${TMP_DIR}/hg18.chrom.sizes"
 
-if [[ -f "$CHROM_SIZES_LOCAL" ]]; then
-    cp "$CHROM_SIZES_LOCAL" "$CHROM_SIZES_TMP"
-else
-    if command -v wget >/dev/null 2>&1; then
-        wget -q -O "$CHROM_SIZES_TMP" \
-            "https://hgdownload.soe.ucsc.edu/goldenPath/hg18/bigZips/hg18.chrom.sizes"
-    elif command -v curl >/dev/null 2>&1; then
-        curl -fsSL \
-            "https://hgdownload.soe.ucsc.edu/goldenPath/hg18/bigZips/hg18.chrom.sizes" \
-            -o "$CHROM_SIZES_TMP"
-    else
-        echo "Error: need wget or curl to download hg18.chrom.sizes." >&2
-        exit 1
-    fi
+gunzip -c "$CHAIN_FILE" \
+    | awk '$1 == "chain" { print $3 "\t" $4 }' \
+    | sort -u \
+    > "$CHROM_SIZES_TMP"
+
+if [[ ! -s "$CHROM_SIZES_TMP" ]]; then
+    echo "Error: no hg18 chromosome sizes could be read from $CHAIN_FILE." >&2
+    exit 1
 fi
 
 cp "$INPUT_WIG_GZ" \

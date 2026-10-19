@@ -1,3 +1,9 @@
+"""eccDNA length distributions and peak detection.
+
+Bins circle lengths at single-base-pair resolution, smooths the histograms with a
+Gaussian filter, and locates the dominant and secondary length peaks per dataset.
+"""
+
 from pathlib import Path
 
 import numpy as np
@@ -11,13 +17,11 @@ from scipy.stats import gaussian_kde
 
 
 # Length range used for the analysis and plots
-len_min = 0
-len_max = 1000
+LEN_MIN = 0
+LEN_MAX = 1000
 
 
-# ============================================================
-# KDE peak analysis
-# ============================================================
+# --- KDE peak analysis ---
 
 def analyze_kde_peaks(
     lengths,
@@ -87,9 +91,7 @@ def analyze_kde_peaks(
     return peak_x, mean_peak_difference
 
 
-# ============================================================
-# Length distribution plotting and KDE analysis
-# ============================================================
+# --- Length distribution plotting and KDE analysis ---
 
 def plot_length_distributions(
     dataset_group,
@@ -152,9 +154,7 @@ def plot_length_distributions(
     if num_datasets == 0:
         return pd.DataFrame()
 
-    # ========================================================
-    # Figure layout
-    # ========================================================
+    # --- Figure layout ---
 
     if verbose:
         nrows = 2
@@ -179,9 +179,7 @@ def plot_length_distributions(
         ncols
     )
 
-    # ========================================================
-    # Histogram calculation
-    # ========================================================
+    # --- Histogram calculation ---
 
     def compute_smoothed_histogram(
         lengths,
@@ -225,9 +223,7 @@ def plot_length_distributions(
     # Store KDE results for all datasets
     kde_results = []
 
-    # ========================================================
-    # Dataset plotting loop
-    # ========================================================
+    # --- Dataset plotting loop ---
 
     for i, (dataset_name, lengths) in enumerate(
         dataset_group
@@ -240,9 +236,7 @@ def plot_length_distributions(
         if lengths.size == 0:
             continue
 
-        # ====================================================
-        # Determine subplot positions
-        # ====================================================
+        # --- Determine subplot positions ---
 
         if verbose:
             # Full distribution on the top row
@@ -260,9 +254,7 @@ def plot_length_distributions(
             col_left = (i % 2) * 2
             col_right = col_left + 1
 
-        # ====================================================
-        # Full length distribution
-        # ====================================================
+        # --- Full length distribution ---
 
         bin_centers, smoothed_hist = (
             compute_smoothed_histogram(
@@ -273,8 +265,8 @@ def plot_length_distributions(
 
         # Number of circles within the selected length range
         full_count = (
-            (lengths >= len_min) &
-            (lengths <= len_max)
+            (lengths >= LEN_MIN) &
+            (lengths <= LEN_MAX)
         ).sum()
 
         # Plot the full distribution in grey
@@ -292,8 +284,8 @@ def plot_length_distributions(
             row,
             col_left
         ].set_xlim(
-            len_min,
-            len_max
+            LEN_MIN,
+            LEN_MAX
         )
 
         axs[
@@ -332,9 +324,7 @@ def plot_length_distributions(
                 fontsize=14
             )
 
-        # ====================================================
-        # Main histogram peak
-        # ====================================================
+        # --- Main histogram peak ---
 
         peaks, _ = find_peaks(
             smoothed_hist
@@ -373,9 +363,7 @@ def plot_length_distributions(
             range_min = 130
             range_max = 230
 
-        # ====================================================
-        # Highlight the zoom region
-        # ====================================================
+        # --- Highlight the zoom region ---
 
         mask = (
             (bin_centers >= range_min) &
@@ -398,9 +386,7 @@ def plot_length_distributions(
             (lengths <= range_max)
         ).sum()
 
-        # ====================================================
-        # Zoomed length distribution
-        # ====================================================
+        # --- Zoomed length distribution ---
 
         # Recalculate the histogram with minimal smoothing
         # to preserve the original zoomed-view appearance.
@@ -483,9 +469,7 @@ def plot_length_distributions(
 
             zoom_ax.set_ylabel("")
 
-        # ====================================================
-        # Axis labels
-        # ====================================================
+        # --- Axis labels ---
 
         if verbose:
 
@@ -536,9 +520,7 @@ def plot_length_distributions(
                     fontsize=18
                 )
 
-        # ====================================================
-        # Dataset name between the two panels
-        # ====================================================
+        # --- Dataset name between the two panels ---
 
         if not verbose:
 
@@ -587,9 +569,7 @@ def plot_length_distributions(
                 fontsize=20
             )
 
-        # ====================================================
-        # KDE peak analysis
-        # ====================================================
+        # --- KDE peak analysis ---
 
         peak_x, mean_peak_difference = (
             analyze_kde_peaks(
@@ -607,9 +587,7 @@ def plot_length_distributions(
             "Mean Peak Difference": mean_peak_difference,
         })
 
-    # ========================================================
-    # Hide unused subplot axes
-    # ========================================================
+    # --- Hide unused subplot axes ---
 
     if not verbose:
 
@@ -642,9 +620,7 @@ def plot_length_distributions(
                 col_right
             ].axis("off")
 
-    # ========================================================
-    # Final figure layout
-    # ========================================================
+    # --- Final figure layout ---
 
     plt.tight_layout(
         rect=[
@@ -665,9 +641,7 @@ def plot_length_distributions(
         hspace=space
     )
 
-    # ========================================================
-    # Save figure
-    # ========================================================
+    # --- Save figure ---
 
     output_file = Path(
         output_file
@@ -689,9 +663,7 @@ def plot_length_distributions(
         bbox_inches="tight"
     )
 
-    # ========================================================
-    # Save KDE results
-    # ========================================================
+    # --- Save KDE results ---
 
     kde_results = pd.DataFrame(
         kde_results

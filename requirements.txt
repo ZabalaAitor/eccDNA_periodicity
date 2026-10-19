@@ -1,0 +1,25 @@
+# Python dependencies for the eccDNA periodicity analysis.
+#
+#   pip install -r requirements.txt
+#
+# The pipeline also needs three command-line tools that pip cannot install.
+# Install them with conda (see environment.yml, which covers everything) or
+# provide them on PATH yourself:
+#
+#   bedtools     2.31.1      conda install -c bioconda bedtools=2.31.1
+#   liftOver     kent v482   conda install -c bioconda ucsc-liftover=482
+#   wigToBigWig  v2.9 (v482) conda install -c bioconda ucsc-wigtobigwig=482
+#
+# The bedtools version is reproducibility-critical: the pseudo-random stream
+# behind `bedtools shuffle -seed` is not stable across versions, so a different
+# version will not reproduce the deposited permutations.
+#
+# Versions below are those under which the pipeline was verified to reproduce
+# the deposited results.
+numpy==2.4.6
+pandas==2.3.3
+scipy==1.17.1
+matplotlib==3.11.2
+seaborn==0.13.2
+pyBigWig==0.3.26
+jupyterlab

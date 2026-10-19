@@ -1,12 +1,17 @@
+"""Nucleosome dyad calling from MNase-seq midpoint signal.
+
+Scores every genomic position by the fraction of fragment midpoints falling in a
+central 31-bp window relative to a 201-bp background window, and reports the
+local maxima of that positioning score as candidate dyads.
+"""
+
 import bisect
 
 import numpy as np
 import pyBigWig
 
 
-# ---------------------------------------------------------------------
-# Settings
-# ---------------------------------------------------------------------
+# --- Settings ---
 
 BIGWIG_FILE = "GSE36979_mnase_mids_combined_147.bw"
 OUTPUT_FILE = "gaffney_consensus_dyads_hg18.tsv"
@@ -97,6 +102,7 @@ def remove_overlapping_calls(calls):
 
 
 def call_dyads_on_chromosome(bigwig,chrom,chrom_length):
+    """Call candidate dyads on a single chromosome, processed in chunks."""
     calls = []
     for chunk_start in range(0, chrom_length, CHUNK_SIZE):
         # define the end

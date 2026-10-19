@@ -5,7 +5,8 @@
 /inskape/
 /results*/
 **/__pycache__/
-
+/src_*/
 /data.csv
 /data.zip
 /data_groves.zip
+/zenodo*/

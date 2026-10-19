@@ -1,0 +1,34 @@
+# Conda environment for the eccDNA periodicity analysis.
+#
+#   conda env create -f environment.yml
+#   conda activate eccdna-periodicity
+#
+# These are the versions under which the pipeline was verified to reproduce the
+# deposited results byte for byte (liftOver output, consensus dyad calls,
+# non-genic circles, and all 1000 shuffle permutations).
+#
+# The bedtools pin is reproducibility-critical, not cosmetic: the pseudo-random
+# stream behind `bedtools shuffle -seed` is not stable across bedtools versions,
+# so a different version reproduces neither the permutations in results/dyads/random
+# nor the expected distribution derived from them.
+name: eccdna-periodicity
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  # Interpreter
+  - python=3.11
+  # Analysis
+  - numpy=2.4.6
+  - pandas=2.3.3
+  - scipy=1.17.1
+  - matplotlib-base=3.11.2
+  - seaborn=0.13.2
+  - pybigwig=0.3.26
+  # Command-line tools called by src/*.sh
+  - bedtools=2.31.1
+  - ucsc-liftover=482
+  - ucsc-wigtobigwig=482
+  - wget
+  # Notebook
+  - jupyterlab

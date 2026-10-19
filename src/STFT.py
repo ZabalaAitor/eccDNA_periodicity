@@ -1,3 +1,10 @@
+"""Short-time Fourier transform of eccDNA length distributions.
+
+Builds length-density signals, removes the low-frequency envelope with a
+Butterworth high-pass filter, and computes STFT spectrograms used to resolve
+the nucleosome-scale (~180 bp) and helical-scale (~10.5 bp) periodicities.
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import stft, butter, filtfilt
@@ -7,21 +14,21 @@ from pathlib import Path
 
 
 # STFT and filtering parameters
-cutoff_freq = 0.05
-fs = 1
-nperseg = 400
-noverlap = nperseg - 1
+CUTOFF_FREQ = 0.05
+FS = 1
+NPERSEG = 400
+NOVERLAP = NPERSEG - 1
 
 # Frequency range displayed in the STFT plots
-freq_min = 0
-freq_max = 0.2
+FREQ_MIN = 0
+FREQ_MAX = 0.2
 
 # Length range analyzed
-len_min = 0
-len_max = 1000
+LEN_MIN = 0
+LEN_MAX = 1000
 
 
-def highpass_filter(data, cutoff_freq, fs=fs, order=4):
+def highpass_filter(data, cutoff_freq, fs=FS, order=4):
     """
     Apply a high-pass Butterworth filter to remove low-frequency components.
 
@@ -63,12 +70,12 @@ def process_dataset_for_stft(
     data_dict,
     dataset,
     ax,
-    cutoff_freq=cutoff_freq,
-    fs=fs,
-    nperseg=nperseg,
-    noverlap=noverlap,
-    freq_min=freq_min,
-    freq_max=freq_max,
+    cutoff_freq=CUTOFF_FREQ,
+    fs=FS,
+    nperseg=NPERSEG,
+    noverlap=NOVERLAP,
+    freq_min=FREQ_MIN,
+    freq_max=FREQ_MAX,
     normalize=True,
     legend=True,
     verbose=False
@@ -124,7 +131,7 @@ def process_dataset_for_stft(
     lengths = data_dict[f"{dataset}_lengths"]
 
     # Convert the length measurements into a frequency distribution
-    length_bins = np.arange(len_min, len_max)
+    length_bins = np.arange(LEN_MIN, LEN_MAX)
     length_distribution, _ = np.histogram(
         lengths,
         bins=length_bins
@@ -152,7 +159,7 @@ def process_dataset_for_stft(
     )
 
     # Convert the STFT time axis back to the original length scale
-    time = time + len_min
+    time = time + LEN_MIN
 
     # Plot STFT magnitude
     pcm = ax.pcolormesh(
@@ -234,6 +241,7 @@ def process_dataset_for_stft(
 
     # Display frequency values as periodicities in base pairs
     def periodicity_formatter(x, pos):
+        """Format a frequency tick as the corresponding periodicity in base pairs."""
         if x == 0:
             return ""
 
@@ -559,12 +567,12 @@ def plot_stft_distributions(
 def extract_frequency_amplitude(
     data_dict,
     dataset,
-    cutoff_freq=cutoff_freq,
-    fs=fs,
-    nperseg=nperseg,
-    noverlap=noverlap,
-    len_min=len_min,
-    len_max=len_max,
+    cutoff_freq=CUTOFF_FREQ,
+    fs=FS,
+    nperseg=NPERSEG,
+    noverlap=NOVERLAP,
+    len_min=LEN_MIN,
+    len_max=LEN_MAX,
     target_freq=1 / 10.5,
     threshold=1 / 2,
     n_bootstraps=100,
@@ -709,8 +717,8 @@ def plot_amplitudes_vs_samples(
     target_freq=1 / 10.5,
     threshold=0.01,
     normalize=True,
-    len_min=len_min,
-    len_max=len_max,
+    len_min=LEN_MIN,
+    len_max=LEN_MAX,
 ):
     """
     Plot maximum STFT magnitude at the target frequency

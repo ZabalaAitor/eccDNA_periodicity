@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# Download GENCODE v50 annotation and extract gene intervals (hg38).
+# Usage: bash src/getgenes.sh [output_dir]   (default: results/dyads)
 set -euo pipefail
 
-OUT_DIR="${1:-dyad}"
+OUT_DIR="${1:-results/dyads}"
 mkdir -p "$OUT_DIR"
 
 GTF="${OUT_DIR}/gencode.v50.annotation.gtf.gz"
