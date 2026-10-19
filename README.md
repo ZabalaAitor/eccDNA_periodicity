@@ -1,40 +1,131 @@
-# 🧬 Extrachromosomal circular DNA formation follows a 10.5-bp periodicity imposed by the minor groove orientation around nucleosomes
+# 🧬 Extrachromosomal circular DNA formation follows a 10.5-bp periodicity reflecting the minor groove orientation around nucleosomes
 
-This repository contains the code and notebooks used in the study **"Extrachromosomal circular DNA formation follows a 10.5 base-pair periodicity imposed by the minor groove orientation around nucleosomes"**.
+Code and analysis notebook for the study **"Extrachromosomal circular DNA
+formation follows a 10.5-bp periodicity reflecting the minor groove orientation
+around nucleosomes"**.
 
-## 📁 Repository Structure
+The analysis measures the length distribution of eccDNA across 25 published
+datasets from four species, and maps eccDNA breakpoints relative to nucleosome
+dyads in the four human datasets.
 
-- `eccDNA_periodicity_paper.ipynb`: Main notebook performing the analysis and generating plots.
+## 📁 Repository structure
 
-- `src`: Script for running the notebook.
+```
+eccDNA_periodicity.ipynb     Main notebook: runs the pipeline and makes the figures
+src/                         Analysis modules and pipeline scripts
+environment.yml              Conda environment (Python packages + command-line tools)
+requirements.txt             Python dependencies only
+data/                        Inputs (downloaded from Zenodo, see below)
+results/                     Everything the pipeline produces
+```
 
-## 📥 How to Use This Repository
+`src/` contains the Python modules imported by the notebook:
 
-### 1. Clone the Repository
+| File | Purpose |
+|---|---|
+| `preprocessing.py` | Load and merge the BED datasets, dataset-size summaries |
+| `length_distribution.py` | Length distributions and KDE peak detection |
+| `STFT.py` | Short-time Fourier analysis of the length distributions |
+| `dyads.py` | Breakpoint-to-dyad mapping and observed/expected enrichment |
+| `call_dyads.py` | Consensus dyad calling from the MNase-seq signal |
+
+and the shell scripts that the notebook calls for the heavy steps:
+
+| Script | Purpose |
+|---|---|
+| `make_merged_hg38.sh` | Lift the three human Circle-Seq datasets hg19 → GRCh38 and pool them with the microDNA dataset |
+| `run_gaffney_consensus_dyads_hg38.sh` | Call consensus nucleosome dyads from the MNase-seq signal and lift them hg18 → GRCh38 |
+| `liftover_consensus_dyads_hg18_to_hg38.sh` | LiftOver helper used by the script above |
+| `getgenes.sh` | Download GENCODE v50 and derive the genic intervals |
+| `non_genic.sh` | Keep only circles that do not overlap a gene |
+| `random.sh` | Generate the seeded random permutations |
+
+## ⚙️ Installation
 
 ```bash
 git clone https://github.com/ZabalaAitor/eccDNA_periodicity
 cd eccDNA_periodicity
+conda env create -f environment.yml
+conda activate eccdna-periodicity
 ```
 
-### 2. Download input data from Zenodo:
+The pipeline needs three command-line tools in addition to the Python packages:
+`bedtools`, and UCSC `liftOver` and `wigToBigWig`. `environment.yml` installs
+all of them; `requirements.txt` covers only the Python side.
 
-🔗 [https://zenodo.org/records/15783792](https://zenodo.org/record/15783792)
+> **The `bedtools` version matters.** The pseudo-random stream behind
+> `bedtools shuffle -seed` is not stable across versions, so a version other
+> than the pinned 2.31.1 produces different permutations and a different
+> expected distribution.
 
-After downloading, extract the contents and organize them as follows:
+## 📥 Input data
 
-- `data/` → should contain all BED files with the eccDNA detection.
+Download the input deposit from Zenodo and extract it at the root of the
+repository, so that the tree becomes `data/`:
 
-- `dyad/` → contains nucleosome dyad positions and related reference files used for nucleosome positioning/periodicity analysis:
-  - `gaffney_consensus_dyads_hg38.tsv` → consensus nucleosome dyad positions in the human hg38 genome assembly.
-  - `GSE36979_mnase_mids_combined_147.wig.gz` → MNase-seq nucleosome dyad/midpoint signal, corresponding to nucleosome positioning data.
-  - `hg18ToHg38.over.chain.gz` → UCSC chain file used to convert genomic coordinates from hg18 to hg38.
+🔗 https://doi.org/10.5281/zenodo.23472112
 
-These two folders (`data/` and `dyad/`) are essential for running the pipeline.
+```
+data/
+├── arabidopsis/  chicken/  human/  mice/  mice1L3KO/   25 eccDNA datasets (BED3)
+└── reference/                                          5 external reference files
+```
 
-## 📊 Outputs
+`data/reference/` holds the MNase-seq midpoint signal (GEO GSE36979), the two
+UCSC chain files (hg18→hg38 and hg19→hg38), the GRCh38 chromosome sizes and the
+ENCODE blacklist. The GENCODE v50 annotation is **not** part of the deposit:
+`src/getgenes.sh` downloads it on demand.
 
-The ouputs of the benchmarking analysis are available at:  
-🔗 [https://zenodo.org/records/15783794](https://zenodo.org/records/15783794)
+One file in the results deposit is also needed as an input:
+`results/dyads/merged_hg38.bed`. The notebook re-derives it and checks the
+result, but does not overwrite it, because its row order determines the
+`bedtools shuffle -seed` draws and is not reproducible by sorting.
 
-## Cite
+## ▶️ Running the analysis
+
+Open `eccDNA_periodicity.ipynb` and run the cells in order. The pipeline is:
+
+1. pool the human datasets in GRCh38 (`make_merged_hg38.sh`);
+2. call consensus nucleosome dyads (`run_gaffney_consensus_dyads_hg38.sh`);
+3. derive the genic intervals and keep the non-genic circles
+   (`getgenes.sh`, `non_genic.sh`);
+4. generate 1000 seeded permutations (`random.sh`);
+5. map breakpoints to the closest dyad and compute the observed/expected
+   enrichment (`dyads.py`).
+
+Steps 2 and 5 are the slow ones; the dyad calling takes about ten minutes and
+the permutation analysis considerably longer.
+
+## 📊 Results
+
+The full set of outputs is deposited at Zenodo:
+
+🔗 *DOI of the workflow and results deposit — to be added*
+
+## 📄 License
+
+MIT. See [LICENSE](LICENSE).
+
+## 📚 Cite
+
+If you use this code or the deposited data, please cite the paper and the
+Zenodo deposit:
+
+```bibtex
+@misc{zabala2026extrachromosomal,
+  author    = {Zabala, Aitor and
+               Ascensi{\'o}n, Alex M. and
+               Otzen Bagger, Frederik and
+               Krogh, Anders and
+               Otaegui, David and
+               Prada-Luengo, I{\~n}igo},
+  title     = {Extrachromosomal circular {DNA} formation follows a
+               10.5-bp periodicity reflecting the minor groove
+               orientation around nucleosomes},
+  year      = {2026},
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.23472112},
+  url       = {https://doi.org/10.5281/zenodo.23472112},
+  note      = {Dataset}
+}
+```
